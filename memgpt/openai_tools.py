@@ -3,7 +3,7 @@ import random
 import time
 
 import openai
-
+openai.api_key = "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"
 
 def retry_with_exponential_backoff(
     func,

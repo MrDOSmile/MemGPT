@@ -488,6 +488,7 @@ class AgentAsync(object):
             # (if yes) Step 3: call the function
             # (if yes) Step 4: send the info on the function call and function response to LLM
             response_message = response.choices[0].message
+            print(response_message.content)
             response_message_copy = response_message.copy()
             all_response_messages, heartbeat_request, function_failed = await self.handle_ai_response(response_message)
 

@@ -20,11 +20,56 @@ import memgpt.personas.personas as personas
 import memgpt.humans.humans as humans
 from memgpt.persistence_manager import InMemoryStateManager, InMemoryStateManagerWithPreloadedArchivalMemory, InMemoryStateManagerWithFaiss
 
+import glob
+def get_most_recent_json_file(name:str):
+    directory_path=f"X:\AI\MemGPT\saved_state\{name}"
+    # Construct the glob pattern to match .json files
+    pattern = os.path.join(directory_path, '*-*.json')
+    # Use glob to find all matching files
+    json_files = glob.glob(pattern)
+    if not json_files:
+        return None  # No .json files found
+    # Sort the list of .json files by file name (in reverse) to get the most recent one
+    most_recent_json_file = max(json_files, key=os.path.basename)
+    # Extract the file name from the full path
+    file_name = os.path.basename(most_recent_json_file)
+    return file_name
+
+import tkinter as tk
+def get_multiline_input(callback):
+    def submit():
+        text = text_widget.get("1.0", "end-1c")  # Retrieve text from Text widget
+        callback(text)  # Pass the entered text to the callback function
+        root.destroy() # Close the Tkinter window
+
+    root = tk.Tk()
+    root.title("Multi-line Text Input")
+
+    label = tk.Label(root, text="Enter your multi-line text:")
+    label.pack()
+
+    text_widget = tk.Text(root, height=10, width=40)
+    text_widget.pack()
+
+    submit_button = tk.Button(root, text="Submit", command=submit)
+    submit_button.pack()
+
+    root.mainloop()
+
+user_input = ''
+user_input_list = []
+
+def process_text(text):
+    # Do something with the entered text
+    user_input_list.append(text)
+
+get_multiline_input(process_text)
+
 FLAGS = flags.FLAGS
 flags.DEFINE_string("persona", default=personas.DEFAULT, required=False, help="Specify persona")
 flags.DEFINE_string("human", default=humans.DEFAULT, required=False, help="Specify human")
 flags.DEFINE_string("model", default=constants.DEFAULT_MEMGPT_MODEL, required=False, help="Specify the LLM model")
-flags.DEFINE_boolean("first", default=False, required=False, help="Use -first to send the first message in the sequence")
+flags.DEFINE_boolean("first", default=True, required=False, help="Use -first to send the first message in the sequence")
 flags.DEFINE_boolean("debug", default=False, required=False, help="Use -debug to enable debugging output")
 flags.DEFINE_boolean("no_verify", default=False, required=False, help="Bypass message verification")
 flags.DEFINE_string("archival_storage_faiss_path", default="", required=False, help="Specify archival storage with FAISS index to load (a folder with a .index and .json describing documents to be loaded)")
@@ -40,8 +85,17 @@ def clear_line():
         sys.stdout.write("\033[2K\033[G")
         sys.stdout.flush()
 
-
 async def main():
+    FLAGS(sys.argv)
+    # print(f"persona: {FLAGS.persona}")
+    # print(f"human: {FLAGS.human}")
+    # print(f"model: {FLAGS.model}")
+    # print(f"first: {FLAGS.first}")
+    # print(f"debug: {FLAGS.debug}")
+    # print(f"archival_storage_faiss_path: {FLAGS.archival_storage_faiss_path}")
+    # print(f"archival_storage_files: {FLAGS.archival_storage_files}")
+
+
     utils.DEBUG = FLAGS.debug
     logging.getLogger().setLevel(logging.CRITICAL)
     if FLAGS.debug:
@@ -63,12 +117,24 @@ async def main():
     else:
         persistence_manager = InMemoryStateManager()
     memgpt_agent = presets.use_preset(presets.DEFAULT, FLAGS.model, personas.get_persona_text(FLAGS.persona), humans.get_human_text(FLAGS.human), interface, persistence_manager)
+
+    profile_name = os.path.splitext(os.path.basename(FLAGS.human))[0]
+    most_recent_json = get_most_recent_json_file(name=profile_name)
+    if most_recent_json is not None:
+        memgpt_agent.load_from_json_file_inplace(f"X:\AI\MemGPT\saved_state\{profile_name}\{most_recent_json}")
+    else:
+        if not os.path.exists(f"X:\AI\MemGPT\saved_state\{profile_name}"):
+            os.makedirs(f"X:\AI\MemGPT\saved_state\{profile_name}")
+            print(f"This is your first time on this profile.\nThere is no conversation history.\nFuture conversations will be saved under X:\AI\MemGPT\saved_state\{profile_name}")
+        else:
+            print(f"There is no conversation history in this profile.")
+
     print_messages = interface.print_messages
     await print_messages(memgpt_agent.messages)
 
 
     counter = 0
-    user_input = None
+    global user_input
     skip_next_user_input = False
     user_message = None
     USER_GOES_FIRST = FLAGS.first
@@ -97,9 +163,9 @@ async def main():
 
     while True:
         if not skip_next_user_input and (counter > 0 or USER_GOES_FIRST):
-
             # Ask for user input
-            user_input = console.input("[bold cyan]Enter your message:[/bold cyan] ")
+            # user_input = console.input("[bold cyan]Enter your message:[/bold cyan] ")
+            user_input = "\n".join(user_input_list)
             clear_line()
 
             if user_input.startswith('!'):

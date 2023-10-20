@@ -1,6 +1,6 @@
 import os
 
-DEFAULT = 'sam'
+DEFAULT = 'memgpt_starter'
 
 
 def get_persona_text(key=DEFAULT):
