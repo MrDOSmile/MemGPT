@@ -22,7 +22,7 @@ from memgpt.persistence_manager import InMemoryStateManager, InMemoryStateManage
 
 import glob
 def get_most_recent_json_file(name:str):
-    directory_path=f"X:\AI\MemGPT\saved_state\{name}"
+    directory_path=f"X:\AI\MemGPT\MemGPT\saved_state\{name}"
     # Construct the glob pattern to match .json files
     pattern = os.path.join(directory_path, '*-*.json')
     # Use glob to find all matching files
@@ -123,9 +123,9 @@ async def main():
     if most_recent_json is not None:
         memgpt_agent.load_from_json_file_inplace(f"X:\AI\MemGPT\saved_state\{profile_name}\{most_recent_json}")
     else:
-        if not os.path.exists(f"X:\AI\MemGPT\saved_state\{profile_name}"):
-            os.makedirs(f"X:\AI\MemGPT\saved_state\{profile_name}")
-            print(f"This is your first time on this profile.\nThere is no conversation history.\nFuture conversations will be saved under X:\AI\MemGPT\saved_state\{profile_name}")
+        if not os.path.exists(f"X:\AI\MemGPT\MemGPT\saved_state\{profile_name}"):
+            os.makedirs(f"X:\AI\MemGPT\MemGPT\saved_state\{profile_name}")
+            print(f"This is your first time on this profile.\nThere is no conversation history.\nFuture conversations will be saved under X:\AI\MemGPT\MemGPT\saved_state\{profile_name}")
         else:
             print(f"There is no conversation history in this profile.")
 
@@ -152,7 +152,7 @@ async def main():
                 await memgpt_agent.persistence_manager.archival_memory.insert(row)
             print(f"Database loaded into archival memory.")
 
-    # auto-exit for 
+    # auto-exit for
     if "GITHUB_ACTIONS" in os.environ:
         return
 
